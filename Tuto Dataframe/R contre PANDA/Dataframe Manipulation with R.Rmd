@@ -1,0 +1,115 @@
+---
+title: "DATAFRAME TUTO"
+author: "Maxime & Lucas"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+**I. CREATION ET MANIPULATION D'UNE DATAFRAME**
+
+  **Creation du dataframe (est un tableau qui ressemble a une matrice mais dans lequel on peut avoir differents types de tableaux de donnees avec des numeriques et des caracteres)**
+
+```{r}
+Nom <- c("Aline","Bertrand","Charlie","Adrien") #Creation d'un vecteur de chaines de caracteres
+Rang <- matrix(c(1,3,2,4), nrow=4,ncol=1) #CrÃ©ation d'une matrice de 4 lignes et une colonne
+Sexe <- c("F","H","H","H") #chaines de caractere et on attribue a Sexe les variables qualitatives
+Sex <- factor(Sexe) #on crÃ©e le facteur Sex comptenant les valeurs de notre vecteur Sexe
+mondata <- data.frame(Nom,Rang,Sex) #crÃ©ation du dataframe a partir des deux vecteurs et de la matrice
+
+str(mondata)#affichage des types de nos differentes variables
+View(mondata)#visualisation en tableau du dataframe crÃ©e
+summary (mondata) #AperÃ§u generale sur les stats du dataframe
+
+```
+
+**II.TRAITEMENT DES DONNEES**
+
+  **1. IMPORT DATAFRAME**
+
+```{r}
+#Import du fichier csv
+data<- read.csv("C:/Users/allak/Desktop/PSB Cours/Mes cours/Maths pour le Big Data et programmation R/jeudedonnees.csv", header=TRUE, encoding="UTF-8")
+
+```
+
+  **2. STRUCTURE DES DONNEES**
+
+```{r}
+str(data)
+head(data)#Les 6 premieres lignes y compris les titres
+data[1050 : 1058,] #extraction des 8 dernieres lignes
+
+```
+
+
+  **3. RESUME STATISTIQUES ET TABLE DE CONTINGENCE**
+
+```{r}
+summary(data)#permet d'obtenir un resume statistiques
+mean(data$age)#moyenne age
+table(data$Malade.data$fumeur) #table de contingence
+
+```
+
+
+  **4. COPIE DES COLONNES D'UN DATAFRAME ET MODIFICATIONS**
+
+```{r}
+attach(data)#copie de notre dataframe
+head(age)
+age[4]<-34 #modification de l'element à la 4eme position
+head(age)
+head(data)#base de données initiale non modifiée
+head(age)
+
+```
+
+  **5. MODIFICATION D'UNE VALEUR DE LA TABLE DE DONNEES**
+
+```{r}
+head(data)
+data[2,]$genre<-"F" #modification 2eme ligne et 1ere colonne en Femme
+data[1,1]<-"F" #modification 1ere ligne et 1ere colonne en Femme
+head(data)
+data[1:6,1]<-"F"
+head(data)#modification des 6premieres lignes de la 1ere colonne
+
+
+```
+
+
+  **6. AJOUT D'UNE OU PLUSIEURS COLONNES A LA TABLE DE DONNEES**
+
+```{r}
+str(data$poids)
+new_poids <- as.numeric(as.factor(data$poids))#Changement du caratere 'factor' de la variable poids en numerique
+new_taille = data$taille/100 #Creation d'une nouvelle variable qui divise la taille en 100
+IMC = new_poids/(new_taille^2)#Creation d'une variable "Indice de Masse Corporelle" qui divise le poids par la taille au carré
+new_data<-cbind(data,new_poids, new_taille,IMC) #on crée des nouvelles colonnes avec les nouvelles variables
+
+```
+
+  **7. RENOMMER UNE COLONNE**
+
+```{r}
+colnames(new_data) #affiche tous les noms des colonnes
+colnames(new_data)[14]<- "nouvelle_taille" # On a changé le nom de la colonne 'new_taille' par 'nouvelle_taille'
+colnames(new_data)[15]<- "Indice de Masse Corporelle" #pareillement pour 'IMC' par 'Indice de masse corporelle'
+colnames(new_data)
+
+```
+
+  **8. SUPPRESSION D'UNE COLONNE**
+
+```{r}
+#on va creer une colonne nommé 'Tuto' vide NA et ensuite la supprimer
+Tuto = age/2
+new_data2 = cbind(new_data,Tuto) #on a ajouter une colonne dans notre nouvelle dataframe
+colnames(new_data2)# Tuto est bien parmi les noms des colonnes
+new_data2[,16]<-NULL #Suppresion de la 16eme colonne 'Tuto'
+colnames(new_data2)
+
+```
+

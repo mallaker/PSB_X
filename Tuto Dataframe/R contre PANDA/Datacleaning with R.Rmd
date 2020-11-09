@@ -1,0 +1,148 @@
+---
+title: "TUTO DATA CLEANING D'UN DATAFRAME"
+author: "Maxime & Lucas"
+output: pdf_document
+---
+
+**CONTEXTE**
+
+Un fichier contenant des informations sur des personnes vous sont envoyées. Cependant ce fichier n'est pas traitable car les donnees ne sont pas correctement formatees. Votre but est donc de le nettoyer afin de pouvoir analyser les données.
+
+**NOTIONS ABORDEES**
+
+1.Importation de fichier csv
+2.Data Cleaning
+3.Méthodes et fonctions de bases sous R
+4.Manipulation de dataframe
+
+
+**1. IMPORT FICHIER CSV**
+
+```{r}
+data = read.csv("C:/Users/allak/Desktop/PSB Cours/Mes cours/Maths pour le Big Data et programmation R/personnes.csv",encoding = "UTF-8")
+data
+str(data)#On affiche le type des differentes variables
+
+```
+
+On voit que notre dataframe est brute et on cherche à nettoyer les données comprises dans la dataframe avant de faire l'analyse.
+
+**DATACLEANING - NETTOYAGE DE DONNEES**
+
+**2. TRAITEMENT DE LA COLONNE "PRENOM"**
+
+Dans certaines dataframe, les noms ou prenoms peuvent etre en majuscule , en miniscules etc..voici la fonction qui permet d'avoir le meme format sur la colonne de prenom (Premiere lettre en majuscule et le reste en miniscule)
+```{r}
+lower_case = function(value){
+    print(paste('Voici la valeur que je traite:', value))
+    return(tolower(value))
+} #On crée une fonction ramenant la colonne prenom au meme format 
+
+data['prenom_min'] = apply(data['prenom'],1,lower_case)#puis on l'applique à nos prenoms de la dataframe initiale
+
+data['prenom_min'] = NULL
+data
+```
+
+**3. TRAITEMENT COLONNE "EMAIL"**
+
+On se rend compte que certains clients possedent deux mails, on va chercher à en garder que le premier par la manipulation suivante :
+
+```{r}
+#On declare la fonction qui permet de selectionner que les premiers mails
+first = function(str){
+    str = str[[1]]
+    parts = strsplit(str,',')[[1]]
+    first_part = parts[1]
+    if(length(parts) >= 2)
+        print(sprintf(' - Il y a plusieurs parties dans "%s", ne gardons que %s.',paste(parts,collapse=""),first_part))  
+    return(first_part)
+}
+
+#Application de la fonction a la colonne 'email'
+data['email'] = apply(data['email'], 1, first)
+
+data
+```
+
+**4. TRAITEMENT COLONNE "DATE DE NAISSANCE"**
+
+Certaines dates de naissances sont au format numerique et d'autre format composé, on va essayer de les ramener tous au meme format.
+
+```{r}
+data["date_naissance"] = as.Date(data$date_naissance , "%d/%m/%Y")
+```
+
+**5. TRAITEMENT COLONNE "PAYS"**
+
+
+Dans la colonne pays on avait un chiffre comme nom d'un pays, ce qui est anormal et aussi une case vide, on va remplacer tous les noms non reconnus comme des pays par un NA
+
+```{r}
+#On declare d'abord les noms des pays justes ou valables
+VALID_COUNTRIES = c('France', "Côte d'ivoire", 'Madagascar', 'Bénin', 'Allemagne', 'USA')
+
+#On declare la fonction qui permet de remplacer les noms non reconnus comme des pays par un NA
+check_country = function(country){
+    if(! country %in% VALID_COUNTRIES){
+        print(sprintf(' - "%s" n\'est pas un pays valide, nous le supprimons.',country))
+        return(NA)
+    }
+    return (country)
+}
+
+#Application de la fonction a la colonne pays
+data['pays'] = apply(data['pays'], 1, check_country)
+data
+```
+
+**6. TRAITEMENT DE LA TAILLE DES INDIVIDUS**
+
+On remarque dans notre dataframe que certains individus ont definis leur taille en cm et d'autres en m, pour avoir toute les tailles en m:
+```{r}
+#une fonction permettant d'ignorer les valeurs en Cm et permettant de retirer aussi les unités 'm'
+convert_height = function(height){
+    found = regmatches(height, regexpr("[[:digit:]]\\.[[:digit:]]{2}m", height)) 
+    if(length(found)==0){
+        print(paste(height, ' n\'est pas au bon format. Il sera ignoré.'))
+        return(NA)
+    }else{
+        value = substring(height,1,nchar(height)-1) # on enleve le dernier caractere, qui est 'm'
+        return(as.numeric(value))
+    }
+}
+
+#Une fonction permettant de remplacer une valeur anormale par la moyenne de la taille de tous les individus (Hanna qui mesurait 3.45m aura une taille qui sera la moyenne des tailles)
+fill_height = function(height, replacement){
+    if(is.na(height)){
+        print(paste('Imputation par la moyenne :', replacement))
+        return(replacement)
+    }
+    return(height)
+}
+#Application de notre fonction de conversion aux tailles des individus
+data['taille'] = apply(data['taille'],1,convert_height) 
+data['taille'] = apply(data['taille'], 1, function(t) if(!is.na(t) & t<3){t}else{NA})#Permet de d'affecter la valeur NA a toute valeur qui serait totalement sup à 3m
+
+#Calcul de la moyenne et application de la fonction fill_height
+mean_height = mean(as.numeric(data$taille), na.rm=TRUE)
+
+#Une boucle qui permet de remplacer toutes les valeurs aberantes par la moyenne calculée ci-dessus
+for(i in 1:nrow(data))
+    data[i,'taille'] = fill_height(data[i,'taille'], mean_height)
+```
+
+
+**7. COMPARAISON DE NOS DEUX DATAFRAME**
+
+**Avant le traitement**
+```{r}
+old_data = read.csv("C:/Users/allak/Desktop/PSB Cours/Mes cours/Maths pour le Big Data et programmation R/personnes.csv",encoding = "UTF-8")
+old_data
+```
+
+**Apres le traitement**
+```{r}
+data
+```
+
