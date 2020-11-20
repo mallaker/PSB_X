@@ -1,0 +1,286 @@
+---
+title: "Python vs R - Data Cleaning"
+author: "Maxime & Lucas"
+date: "11/17/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(reticulate)
+```
+
+<style>
+.column-left{
+  float: left;
+  width: 48%;
+  text-align: left;
+}
+.column-right{
+  float: right;
+  width: 48%;
+  text-align: right;
+}
+.column-center{
+  float: center;
+  width: 100%;
+  text-align: center;
+</style>
+
+
+## 1. Importation de fichier 
+
+<div class = "row">
+<div class = "col-md-6">
+### Python
+```{python}
+import pandas as pd 
+import numpy as np 
+import re 
+
+dataframe = pd.read_csv("personnes.csv")
+#display(dataframe)
+```
+</div>
+<div class = "col-md-6">
+### R
+```{r}
+dataframe = read.csv("personnes.csv",encoding = "UTF-8")
+#dataframe
+```
+</div>
+</div>
+
+En Python il faut utiliser pandas pour ouvrir un dataframe. 
+Alors que l'utilisation des dataframes est incluse directement dans R 
+
+```{r, echo=FALSE}
+knitr::kable(dataframe)
+```
+
+## 2. observation des types de données 
+
+<div class = "row">
+<div class = "col-md-6">
+### Python
+```{python}
+dataframe.info()
+```
+</div>
+<div class = "col-md-6">
+### R
+```{r}
+str(dataframe)
+```
+</div>
+</div>
+
+les fonctions str() et .info() donnent les informations générales.
+
+## 3. Colonnes noms
+### Python
+```{python}
+clean_dataframe = pd.DataFrame() #datarame pour stocker les nouvelles valeurs et les comparer.
+
+clean_dataframe["prenom"] = dataframe["prenom"].str.replace("ë","e").str.capitalize()
+```
+On donne à la colonnes une propriété "str" et on applique les différentes fonctions
+
+### R 
+```{r}
+lower_case = function(value){
+  return(tolower(value))
+} 
+dataframe['prenom'] = apply(dataframe['prenom'],1,lower_case)
+#dataframe
+```
+En R il faut d'abord définir les différentes fonctions que l'on va appliquer sur les colonnes du dataframe
+
+```{r, echo=FALSE}
+knitr::kable(py$clean_dataframe)
+```
+
+## 4. Colonne email
+
+### Python
+```{python}
+liste_mail = dataframe["email"].str.split(",")
+
+clean_email = []
+for mail in liste_mail : 
+    clean_email.append(mail[0])
+    
+clean_dataframe["email"] = clean_email
+```
+On  sépare chaque cellule en utilisant la fonction "split()". 
+
+On crée une liste qui va contenir les valeurs propres. 
+
+on boucle sur liste_mail afin de récuperer les valeurs en position 0 
+
+### R
+```{r}
+first = function(str){
+    str = str[[1]]
+    parts = strsplit(str,',')[[1]]
+    first_part = parts[1]
+    return(first_part)
+}
+dataframe['email'] = apply(dataframe['email'], 1, first)
+#data
+```
+En R on crée un fonction qui permet de selectionner le mail en 1ere position. 
+
+On utilise "apply()" pour appliquer la fonction sur la colonne mail.
+
+
+```{r, echo=FALSE}
+knitr::kable(py$clean_dataframe)
+```
+
+## 5. Colonnes date de naissance 
+
+### Python 
+```{python}
+clean_dataframe["date_naissance"]=pd.to_datetime(dataframe["date_naissance"])
+```
+
+### R 
+```{r}
+dataframe["date_naissance"] = as.Date(dataframe$date_naissance, "%d/%m/%Y")
+```
+
+Que ce soit en Python en R il existe une fontion qui traite les données de type "date". 
+
+Pour Python, si on veut changer le format année-mois-jour, il faut utiliser le parametre "format = "%d/%m/%Y".
+
+```{r, echo=FALSE}
+knitr::kable(py$clean_dataframe)
+```
+
+## 6. Colonne pays
+
+
+### Python
+```{python}
+for pays in dataframe["pays"].unique() : 
+    print(pays)
+
+clean_dataframe["pays"]=dataframe["pays"].replace("24", np.nan)
+```
+
+### R 
+```{r}
+VALID_COUNTRIES = c('France', "Côte d'ivoire", 'Madagascar', 'Bénin', 'Allemagne', 'USA')
+
+check_country = function(country){
+    if(! country %in% VALID_COUNTRIES){
+        return(NA)
+    }
+    return =(country)
+}
+
+
+dataframe['pays'] = apply(dataframe['pays'], 1, check_country)
+#dataframe
+```
+
+### Approche Python
+On utilise ".unique()" pour retourner les valeurs de la colonne pays sans doublon.
+Cela nous permettra de trouver les valeurs qui posent problèmes. 
+
+On utilise ensuiye la fontion "replace()" sur les fausses valeurs.
+
+### Approche R
+On declare d'abord les noms des pays justes ou valables.
+On declare la fonction qui permet de remplacer les noms non reconnus comme des pays par un NA.
+
+```{r, echo=FALSE}
+knitr::kable(py$clean_dataframe)
+```
+
+
+## 6. Colonne taille
+
+### Python
+```{python}
+taille_cm = []
+for taille in dataframe["taille"] : 
+    clean_height = re.sub("[.,m,c]","",taille) #re.sub on enleve les caratères ".,m,c"
+    taille_cm.append(clean_height)
+
+clean_dataframe["taille"] = taille_cm
+
+clean_dataframe["taille"] = clean_dataframe["taille"].astype(int)
+
+clean_dataframe.describe()
+```
+```{python}
+#remplacement de la valeur abérante.
+clean_dataframe["taille"] = clean_dataframe["taille"].replace(345,np.nan)
+```
+
+
+### R 
+```{r}
+#une fonction pour ignorer les valeurs en Cm et permettant de retirer aussi les unités 'm'
+convert_height = function(height){
+    found = regmatches(height, regexpr("[[:digit:]]\\.[[:digit:]]{2}m", height)) 
+    if(length(found)==0){
+        return(NA)
+    }else{
+        value = substring(height,1,nchar(height)-1) # on enleve le dernier caractere, qui est 'm'
+        return(as.numeric(value))
+    }
+}
+
+
+#Une fonction permettant de remplacer une valeur anormale par la moyenne de la taille de tous les individus (Hanna qui mesurait 3.45m aura une taille qui sera la moyenne des tailles)
+fill_height = function(height, replacement){
+    if(is.na(height)){
+        return(replacement)
+    }
+    return(height)
+}
+dataframe['taille'] = apply(dataframe['taille'],1,convert_height) 
+dataframe['taille'] = apply(dataframe['taille'], 1, function(t) if(!is.na(t) & t<3){t}else{NA})
+
+#Calcul de la moyenne et application de la fonction fill_height
+mean_height = mean(as.numeric(dataframe$taille), na.rm=TRUE)
+
+#Une boucle qui permet de remplacer toutes les valeurs aberantes par la moyenne calculée ci-dessus
+for(i in 1:nrow(dataframe))
+    dataframe[i,'taille'] = fill_height(dataframe[i,'taille'], mean_height)
+```
+En python on choisi de se débarasser de la valeur maquante. 
+En R on décide de la remplacer par la moyenne des autres valeurs. 
+
+# Résultat 
+```{r, echo=FALSE}
+knitr::kable(py$dataframe)
+knitr::kable(py$clean_dataframe)
+```
+
+# Liens utiles 
+
+## python 
+
+jeu de données : https://openclassrooms.com/fr/courses/4525266-decrivez-et-nettoyez-votre-jeu-de-donnees/4928126-tp-nettoyez-votre-jeu-de-donnees.
+
+Pandas : https://pandas.pydata.org/docs/
+
+Numpy : https://numpy.org/doc/
+
+regex : https://docs.python.org/3/library/re.html
+
+Matplotlib : https://matplotlib.org/
+
+## R
+
+jeu de données : https://openclassrooms.com/fr/courses/4525266-decrivez-et-nettoyez-votre-jeu-de-donnees/4928126-tp-nettoyez-votre-jeu-de-donnees
+
+Functions : https://www.tutorialspoint.com/r/r_functions.htm
+
+Learning data preparation and cleaning in R : https://bookdown.org/aschmi11/RESMHandbook/data-preparation-and-cleaning-in-r.html
